@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>家計手帳</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
-<meta name="theme-color" content="#2E251D">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -227,11 +223,6 @@ function save(k){ localStorage.setItem(KEY[k], JSON.stringify(data[k])); }
 
 const fmt = n => 'NT$' + Number(n||0).toLocaleString('zh-TW');
 
-const CATS = {
-  home: ['飲食','居家','交通','水電瓦斯','教育','醫療','娛樂','薪資','其他收入','其他'],
-  personal: ['伙食','交通','家用','家補','娛樂','雜支','電信','保險','特支','其他']
-};
-
 /* ---------- 新增 ---------- */
 function addRow(k){
   const p = k==='home' ? 'h' : 'p';
@@ -254,26 +245,6 @@ function addRow(k){
 
 function delRow(k,i){ if(confirm('刪除這一筆？')){ data[k].splice(i,1); save(k); render(k); } }
 
-/* ---------- 編輯 ---------- */
-let editing = {home:null, personal:null};
-
-function startEdit(k,i){ editing[k]=i; render(k); }
-function cancelEdit(k){ editing[k]=null; render(k); }
-
-function saveEdit(k,i){
-  const row = data[k][i];
-  const date = document.getElementById(`e-date-${k}-${i}`).value;
-  const cat = document.getElementById(`e-cat-${k}-${i}`).value;
-  const desc = document.getElementById(`e-desc-${k}-${i}`).value.trim();
-  const income = parseFloat(document.getElementById(`e-in-${k}-${i}`).value) || 0;
-  const expense = parseFloat(document.getElementById(`e-out-${k}-${i}`).value) || 0;
-  const note = document.getElementById(`e-note-${k}-${i}`).value.trim();
-  if(!date){ alert('請選擇日期'); return; }
-  if(income===0 && expense===0){ alert('請至少填入收入或支出金額'); return; }
-  data[k][i] = {date, cat, desc, income, expense, note};
-  save(k); editing[k]=null; render(k);
-}
-
 /* ---------- 渲染 ---------- */
 function render(k){
   const rows = [...data[k]].map((r,idx)=>({...r,_i:idx}))
@@ -287,34 +258,15 @@ function render(k){
   rows.forEach(r=>{
     bal += (r.income - r.expense); totIn += r.income; totOut += r.expense;
     const tr=document.createElement('tr');
-    if(editing[k]===r._i){
-      const opts = CATS[k].map(c=>`<option ${c===r.cat?'selected':''}>${c}</option>`).join('');
-      tr.innerHTML=`
-        <td><input type="date" id="e-date-${k}-${r._i}" value="${r.date}"></td>
-        <td><select id="e-cat-${k}-${r._i}">${opts}</select></td>
-        <td><input type="text" id="e-desc-${k}-${r._i}" value="${r.desc||''}"></td>
-        <td><input type="number" id="e-in-${k}-${r._i}" value="${r.income||''}" placeholder="0" min="0" style="width:80px"></td>
-        <td><input type="number" id="e-out-${k}-${r._i}" value="${r.expense||''}" placeholder="0" min="0" style="width:80px"></td>
-        <td class="num bal">${fmt(bal)}</td>
-        <td><input type="text" id="e-note-${k}-${r._i}" value="${r.note||''}"></td>
-        <td style="white-space:nowrap">
-          <button class="del" style="color:var(--accent-2)" onclick="saveEdit('${k}',${r._i})">儲存</button>
-          <button class="del" onclick="cancelEdit('${k}')">取消</button>
-        </td>`;
-    } else {
-      tr.innerHTML=`
-        <td>${r.date}</td>
-        <td><span class="cat-chip">${r.cat}</span></td>
-        <td>${r.desc||'—'}</td>
-        <td class="num in-amt">${r.income?fmt(r.income):''}</td>
-        <td class="num out-amt">${r.expense?fmt(r.expense):''}</td>
-        <td class="num bal">${fmt(bal)}</td>
-        <td>${r.note||''}</td>
-        <td style="white-space:nowrap">
-          <button class="del" style="color:var(--accent-2)" onclick="startEdit('${k}',${r._i})">編輯</button>
-          <button class="del" onclick="delRow('${k}',${r._i})">刪除</button>
-        </td>`;
-    }
+    tr.innerHTML=`
+      <td>${r.date}</td>
+      <td><span class="cat-chip">${r.cat}</span></td>
+      <td>${r.desc||'—'}</td>
+      <td class="num in-amt">${r.income?fmt(r.income):''}</td>
+      <td class="num out-amt">${r.expense?fmt(r.expense):''}</td>
+      <td class="num bal">${fmt(bal)}</td>
+      <td>${r.note||''}</td>
+      <td><button class="del" onclick="delRow('${k}',${r._i})">刪除</button></td>`;
     body.appendChild(tr);
   });
 
